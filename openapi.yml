@@ -1,0 +1,234 @@
+openapi: 3.0.3
+
+info:
+  title: Catcord API Specification
+  description: This API specification aims to encapsulate all endpoints and their respective methods available for the Catcord API. From now onwards, the "API" shall refer to the RESTful Catcord API. This specifcation shall always be kept up to date with the latest API version.
+  contact:
+    name: Catcord Support
+    url: https://catcord.codes/support
+    email: support@catcord.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.0.1
+  
+paths:
+  /users:
+    summary: This endpoint will handle basic CRUD operations in relations to users.
+    description: This endpoint is responsible for user-scoped operations such as getting information about an existing user and creating a new user.
+    get:
+      tags:
+      - Users
+      summary: Get information about an existing Catcord user.
+      description: This operation supports returning all the stored information about a user such as their username, profile picture etc.
+      operationId: get_user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Information about the requested user was successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialUser"
+        "401":
+          $ref: "#/components/responses/401_UNAUTHORISED"
+        "403":
+          $ref: "#/components/responses/403_FORBIDDEN"
+        "404":
+          $ref: "#/components/responses/404_NOT_FOUND"
+          
+    post:
+      tags:
+        - Users
+      summary: Create a new Catcord user.
+      description: This operation is used to create a new Catcord user assuming all the information needed is provided.
+      operationId: post_user
+      parameters:
+        - name: user
+          in: query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialUser"
+      responses:
+        "201":
+          description: The user was successfully created and added to the Catcord database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialUser"
+        "401":
+          $ref: "#/components/responses/401_UNAUTHORISED"
+        "403":
+          $ref: "#/components/responses/403_FORBIDDEN"
+        "404":
+          $ref: "#/components/responses/404_NOT_FOUND"
+          
+    patch:
+      tags:
+        - Users
+      summary: Edit information about an existing Catcord user.
+      description: This operation is used to alter information about an existing Catcord user. The new information will be supplied in the query parameters.
+      operationId: edit_user
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: username
+          description: The name the user identifies by on Catcord.
+          in: query
+          schema:
+            type: string
+        - name: discriminator
+          description: A string containing of 4 digits. This allows for multiple people on Catcord to have the same username as their discriminator sets the apart. The discriminator "0000" is reserved for staff and internal use.
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The existing Catcord user's information was successfully edited.
+        "401":
+          $ref: "#/components/responses/401_UNAUTHORISED"
+        "403":
+          $ref: "#/components/responses/403_FORBIDDEN"
+        "404":
+          $ref: "#/components/responses/404_NOT_FOUND"
+          
+    delete:
+      tags:
+        - Users
+      summary: Delete an existing Catcord user.
+      description: This operation is used to delete an existing Catcord user from Catcord permanently.
+      operationId: delete_user
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: The requested user was successfully deleted from Catcord.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartialUser"
+        "401":
+          $ref: "#/components/responses/401_UNAUTHORISED"
+        "403":
+          $ref: "#/components/responses/403_FORBIDDEN"
+        "404":
+          $ref: "#/components/responses/404_NOT_FOUND"
+    
+  /users/me:
+    summary: This endpoint provides personal information about the client
+    description: This endpoint will be used by clients when they have been logged into an account because it enables them to access information not provided through the `users` endpoint.
+    get:
+      tags:
+        - Users
+      summary: Get extra information about an existing Catcord user.
+      responses:
+        "200":
+          description: Extra information about the requested user was successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+components:
+  
+  schemas:
+    PartialUser:
+      type: object
+      properties:
+        id:
+          description: The uniquely generated snowflake is a 64 bit integer which uniquely identifies every user on Catcord. See [here](https://github.com/cat-dev-group/catcord/blob/main/backend/core/actions.py) for more information on the generation process.
+          type: integer
+          format: int64
+        username:
+          description: The name the user identifies by on Catcord.
+          type: string
+        discriminator:
+          description: A string containing of 4 digits. This allows for multiple people on Catcord to have the same username as their discriminator sets the apart. The discriminator "0000" is reserved for staff and internal use.
+          type: string
+        created:
+          description: A string conforming to the [ISO 8601 standard](https://www.iso.org/iso-8601-date-and-time-format.html) representing the creation time of the user in UTC. (Accurate to the nearest millisecond).
+          type: string
+          format: date-time
+      example:
+        id: 1234567890
+        username: It's all objects
+        discriminator: "0000"
+        created: "2021-01-01 00:00:00.001"
+    
+    User:
+      allOf:
+      - $ref: '#/components/schemas/PartialUser'
+      - type: object
+        properties:
+          first_name:
+            description: The user's legal first name.
+            type: string
+          last_name:
+            description: The user's legal last name.
+            type: string
+          email:
+            description: The email the user provided on sign up by which they could be contacted.
+            type: string
+          date_of_birth:
+            description: The user's legal date of birth.
+            type: string
+            format: date
+      example:
+        id: 1234567890
+        username: It's all objects
+        discriminator: "0000"
+        created: "2021-01-01 00:00:00.001"
+        first_name: Monty
+        last_name: Python
+        email: "objects@catcord.codes"
+        date_of_birth: "2021-01-01"
+    
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+  
+  parameters:
+    id:
+      name: id
+      description: The uniquely generated snowflake is a 64 bit integer which uniquely identifies every user on Catcord. See [here](https://github.com/cat-dev-group/catcord/blob/main/backend/core/actions.py) for more information on the generation process.
+      in: query
+      schema:
+        type: integer
+        format: int64
+      required: true
+  
+  responses:
+    
+    401_UNAUTHORISED:
+      description: The client did not provide an API Key so the requested resources were not provided.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    
+    403_FORBIDDEN:
+      description: The client provided an API Key in the but it was either invalid or the user does not have permission to access the requested resources.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    
+    404_NOT_FOUND:
+      description: A user with the specified ID does not exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  
+  securitySchemes:
+    ApiKeyAuthorisation:
+      name: Authorization
+      type: apiKey
+      in: header
+      description: The Catcord API uses a basic API Key method of authorising clients.
+      
+security:
+  - ApiKeyAuthorisation: []
